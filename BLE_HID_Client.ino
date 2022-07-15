@@ -9,7 +9,7 @@
 
 /*
  * This program is based on https://github.com/h2zero/NimBLE-Arduino/tree/master/examples/NimBLE_Client.
- * My small changes are covered by the MIT license.
+ * My changes are covered by the MIT license.
  */
 
 /*
@@ -78,16 +78,8 @@ class ClientCallbacks : public NimBLEClientCallbacks {
    *  the currently used parameters. Default will return true.
    */
   bool onConnParamsUpdateRequest(NimBLEClient* pClient, const ble_gap_upd_params* params) {
-    if(params->itvl_min < 24) { /** 1.25ms units */
-      return false;
-    } else if(params->itvl_max > 40) { /** 1.25ms units */
-      return false;
-    } else if(params->latency > 2) { /** Number of intervals allowed to skip */
-      return false;
-    } else if(params->supervision_timeout > 100) { /** 10ms units */
-      return false;
-    }
-
+    // Failing to accepts parameters may result in the remote device
+    // disconnecting.
     return true;
   };
 
@@ -123,9 +115,9 @@ class AdvertisedDeviceCallbacks: public NimBLEAdvertisedDeviceCallbacks {
   void onResult(NimBLEAdvertisedDevice* advertisedDevice) {
     if(advertisedDevice->isAdvertisingService(NimBLEUUID(HID_SERVICE)))
     {
-      Serial.print("Advertised Device found: ");
+      Serial.print("Advertised HID Device found: ");
       Serial.println(advertisedDevice->toString().c_str());
-      Serial.println("Found HID device");
+
       /** stop scan before connecting */
       NimBLEDevice::getScan()->stop();
       /** Save the device reference in a global for the client to use*/
@@ -153,9 +145,17 @@ void notifyCB(NimBLERemoteCharacteristic* pRemoteCharacteristic, uint8_t* pData,
     Serial.print(',');
   }
   Serial.print(' ');
-  Serial.printf("buttons: 0x%02x x: %d y: %d wheel: %d", pData[0],
-      (int8_t)pData[1], (int8_t)pData[2], (int8_t)pData[3]);
-  if (length == 5) Serial.printf(" hwheel:%d", (int8_t)pData[4]);
+  if (length == 6) {
+    // BLE Trackball Mouse from Amazon returns 6 bytes per HID report
+    Serial.printf("buttons: %02x, x: %d, y: %d, wheel: %d",
+        pData[0], *(int16_t *)&pData[1], *(int16_t *)&pData[3], (int8_t)pData[5]);
+  }
+  else if (length == 5) {
+    // https://github.com/wakwak-koba/ESP32-NimBLE-Mouse
+    // returns 5 bytes per HID report
+    Serial.printf("buttons: %02x, x: %d, y: %d, wheel: %d hwheel: %d",
+        pData[0], (int8_t)pData[1], (int8_t)pData[2], (int8_t)pData[3], (int8_t)pData[4]);
+  }
   Serial.println();
 }
 
@@ -245,44 +245,6 @@ bool connectToServer()
 
   pSvc = pClient->getService(HID_SERVICE);
   if(pSvc) {     /** make sure it's not null */
-    pChr = pSvc->getCharacteristic(HID_REPORT_DATA);
-
-    if(pChr) {     /** make sure it's not null */
-      if(pChr->canRead()) {
-        std::string value = pChr->readValue();
-        Serial.print(pChr->getUUID().toString().c_str());
-        Serial.print(" Value: ");
-        uint8_t *p = (uint8_t *)value.data();
-        for (size_t i = 0; i < value.length(); i++) {
-          Serial.print(p[i], HEX);
-          Serial.print(',');
-        }
-        Serial.println();
-      }
-
-      /*
-       *  Subscribe parameter defaults are: notifications=true, notifyCallback=nullptr, response=false.
-       *  Unsubscribe parameter defaults are: response=false.
-       */
-      if(pChr->canNotify()) {
-        if(!pChr->subscribe(true, notifyCB)) {
-          /** Disconnect if subscribe failed */
-          Serial.println("subscribe notification failed");
-          pClient->disconnect();
-          return false;
-        }
-      }
-      else if(pChr->canIndicate()) {
-        /** Send false as first argument to subscribe to indications instead of notifications */
-        if(!pChr->subscribe(false, notifyCB)) {
-          /** Disconnect if subscribe failed */
-          Serial.println("subscribe indication failed");
-          pClient->disconnect();
-          return false;
-        }
-      }
-    }
-    
     // This returns the HID report descriptor like this
     // HID_REPORT_MAP 0x2a4b Value: 5,1,9,2,A1,1,9,1,A1,0,5,9,19,1,29,5,15,0,25,1,75,1,
     // Copy and paste the value digits to http://eleccelerator.com/usbdescreqparser/
@@ -305,6 +267,27 @@ bool connectToServer()
     else {
       Serial.println("HID REPORT MAP char not found.");
     }
+
+    // Subscribe to characteristics HID_REPORT_DATA.
+    // One real device reports 2 with the same UUID but
+    // different handles. Using getCharacteristic() results
+    // in subscribing to only one.
+    std::vector<NimBLERemoteCharacteristic*>*charvector;
+    charvector = pSvc->getCharacteristics(true);
+    for (auto &it: *charvector) {
+      if (it->getUUID() == NimBLEUUID(HID_REPORT_DATA)) {
+        Serial.println(it->toString().c_str());
+        if (it->canNotify()) {
+          if(!it->subscribe(true, notifyCB)) {
+            /** Disconnect if subscribe failed */
+            Serial.println("subscribe notification failed");
+            pClient->disconnect();
+            return false;
+          }
+        }
+      }
+    }
+
   }
   Serial.println("Done with this device!");
   return true;
@@ -331,8 +314,8 @@ void setup ()
    *
    *  These are the default values, only shown here for demonstration.
    */
-  //NimBLEDevice::setSecurityAuth(false, false, true);
-  NimBLEDevice::setSecurityAuth(/*BLE_SM_PAIR_AUTHREQ_BOND | BLE_SM_PAIR_AUTHREQ_MITM |*/ BLE_SM_PAIR_AUTHREQ_SC);
+  NimBLEDevice::setSecurityAuth(true, true, true);
+  //NimBLEDevice::setSecurityAuth(/*BLE_SM_PAIR_AUTHREQ_BOND | BLE_SM_PAIR_AUTHREQ_MITM |*/ BLE_SM_PAIR_AUTHREQ_SC);
 
   /** Optional: set the transmit power, default is 3db */
   NimBLEDevice::setPower(ESP_PWR_LVL_P9); /** +9db */

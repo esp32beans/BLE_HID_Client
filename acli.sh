@@ -11,11 +11,8 @@ arduino-cli core --no-color install m5stack:esp32
 arduino-cli core --no-color install esp32:esp32@2.0.3
 arduino-cli core --no-color list
 arduino-cli lib --no-color update-index
-arduino-cli lib --no-color install "WiFiManager"
 arduino-cli lib --no-color install "NimBLE-Arduino"
-arduino-cli lib --no-color install "Bounce2"
 arduino-cli lib --no-color list
-ln -s ~/Sync/BLE_HID_Client ${LIBDIR}
 #
 BOARD="esp32:esp32:esp32"
 CC="arduino-cli compile --fqbn esp32:esp32:esp32"

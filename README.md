@@ -7,6 +7,8 @@ HID servers/peripherals such as BLE mice. It has only been tested with
 The mouse input parameters (for example, x, y, buttons) can be used to control
 motors, servos, and LEDs.
 
+This program nows works for a BLE Trackball mouse from Amazon.
+
 ## Libraries
 
 Install the following use the Arduino IDE Library Manager.
@@ -78,3 +80,9 @@ http://eleccelerator.com/usbdescreqparser/ produces the following.
 ```
 
 The Notification lines appear when a button is pressed and released on the ESP32 mouse.
+
+## Warning
+
+Arduino-esp32 2.0.4 works fine except for a few problems with ESP32 S3. If you
+are not planning to use ESP32 S3, just use the latest stable release. If you have
+problems with ESP32 S3, try the previous release.
