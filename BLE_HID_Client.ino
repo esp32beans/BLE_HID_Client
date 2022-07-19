@@ -113,9 +113,9 @@ class ClientCallbacks : public NimBLEClientCallbacks {
 class AdvertisedDeviceCallbacks: public NimBLEAdvertisedDeviceCallbacks {
 
   void onResult(NimBLEAdvertisedDevice* advertisedDevice) {
-    if((advertisedDevice->getAdvType() == BLE_HCI_ADV_TYPE_ADV_DIRECT_IND_HD)
+    if ((advertisedDevice->getAdvType() == BLE_HCI_ADV_TYPE_ADV_DIRECT_IND_HD)
         || (advertisedDevice->getAdvType() == BLE_HCI_ADV_TYPE_ADV_DIRECT_IND_LD)
-        || advertisedDevice->isAdvertisingService(NimBLEUUID(HID_SERVICE)))
+        || (advertisedDevice->haveServiceUUID() && advertisedDevice->isAdvertisingService(NimBLEUUID(HID_SERVICE))))
     {
       Serial.print("Advertised HID Device found: ");
       Serial.println(advertisedDevice->toString().c_str());
