@@ -113,7 +113,9 @@ class ClientCallbacks : public NimBLEClientCallbacks {
 class AdvertisedDeviceCallbacks: public NimBLEAdvertisedDeviceCallbacks {
 
   void onResult(NimBLEAdvertisedDevice* advertisedDevice) {
-    if(advertisedDevice->isAdvertisingService(NimBLEUUID(HID_SERVICE)))
+    if((advertisedDevice->getAdvType() == BLE_HCI_ADV_TYPE_ADV_DIRECT_IND_HD)
+        || (advertisedDevice->getAdvType() == BLE_HCI_ADV_TYPE_ADV_DIRECT_IND_LD)
+        || advertisedDevice->isAdvertisingService(NimBLEUUID(HID_SERVICE)))
     {
       Serial.print("Advertised HID Device found: ");
       Serial.println(advertisedDevice->toString().c_str());
@@ -314,7 +316,7 @@ void setup ()
    *
    *  These are the default values, only shown here for demonstration.
    */
-  NimBLEDevice::setSecurityAuth(true, true, true);
+  NimBLEDevice::setSecurityAuth(true, false, true);
   //NimBLEDevice::setSecurityAuth(/*BLE_SM_PAIR_AUTHREQ_BOND | BLE_SM_PAIR_AUTHREQ_MITM |*/ BLE_SM_PAIR_AUTHREQ_SC);
 
   /** Optional: set the transmit power, default is 3db */
@@ -336,7 +338,7 @@ void setup ()
   /** Active scan will gather scan response data from advertisers
    *  but will use more energy from both devices
    */
-  pScan->setActiveScan(false);
+  pScan->setActiveScan(true);
   /** Start scanning for advertisers for the scan time specified (in seconds) 0 = forever
    *  Optional callback for when scanning stops.
    */
