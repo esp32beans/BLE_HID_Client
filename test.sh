@@ -47,3 +47,7 @@ arduino --install-library "NimBLE-Arduino"
 ln -s ~/Sync/${PROJECT} ${LIBDIR}/..
 cd ${IDEDIR}
 ctags -R . ~/Sync/esp-idf
+git init
+echo -e "*.gz\n*.bz2\n*.tgz\n*.zip\njava/\ntools/\ntools-builder/" >.gitignore
+git add .
+git commit -m "First draft"
