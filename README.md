@@ -1,8 +1,9 @@
 # ESP32 NimBLE HID Client
 
 This demo configures ESP32 NimBLE as a BLE client/central which connects to BLE
-HID servers/peripherals such as BLE mice. It has only been tested with
-[ESP32-NimBLE-Mouse](https://github.com/wakwak-koba/ESP32-NimBLE-Mouse).
+HID servers/peripherals such as BLE mice. It has been tested with
+[ESP32-NimBLE-Mouse](https://github.com/wakwak-koba/ESP32-NimBLE-Mouse) and
+a real BLE trackball mouse.
 
 The mouse input parameters (for example, x, y, buttons) can be used to control
 motors, servos, and LEDs.
@@ -15,7 +16,22 @@ Install the following use the Arduino IDE Library Manager.
 
 * "NimBLE-Arduino" by h2zero
 
-## Sample output
+## Examples
+
+The code has been moved to the examples directory. Both work with
+ESP32-NimBLE-Mouse and the trackball mouse.
+
+### BLE_HID_Client
+
+The original BLE HID client demo.
+
+### BLE_HID_Mouse_USB
+
+This demo converts BLE mouse movements and button clicks to USB mouse. Works
+with a real trackball mouse. Must use an ESP32 S3 to get BLE and USB on the
+same board. ESP32 S2 has USB but not BLE. ESP32 original has BLE but not USB.
+
+## Sample output from BLE_HID_Client
 
 The BLE mouse is actually another ESP32 running ESP32-NimBLE-Mouse.
 
@@ -79,9 +95,10 @@ http://eleccelerator.com/usbdescreqparser/ produces the following.
 // best guess: USB HID Report Descriptor
 ```
 
-The Notification lines appear when a button is pressed and released on the ESP32 mouse.
+The Notification lines appear when a button is pressed and released on the
+ESP32 mouse or trackball mouse.
 
-## Warning
+## Warning if using ESP32 S3
 
 Arduino-esp32 2.0.4 works fine except for a few problems with ESP32 S3. If you
 are not planning to use ESP32 S3, just use the latest stable release. If you have
