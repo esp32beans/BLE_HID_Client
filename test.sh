@@ -37,17 +37,18 @@ arduino --pref "compiler.warning_level=default" \
     --pref "editor.external=true" \
     --save-prefs
 arduino --pref "boardsmanager.additional.urls=https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json,https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json" --save-prefs
-arduino --install-boards "m5stack:esp32"
+#arduino --install-boards "m5stack:esp32"
 arduino --install-boards "esp32:esp32:2.0.3"
 arduino --install-boards "esp32:esp32:2.0.3"
 BOARD="esp32:esp32:esp32"
 arduino --board "${BOARD}" --save-prefs
 CC="arduino --verify --board ${BOARD}"
 arduino --install-library "NimBLE-Arduino"
-ln -s ~/Sync/${PROJECT} ${LIBDIR}/..
+ln -s ~/Sync/${PROJECT} ${LIBDIR}
 cd ${IDEDIR}
 ctags -R . ~/Sync/esp-idf
 git init
 echo -e "*.gz\n*.bz2\n*.tgz\n*.zip\njava/\ntools/\ntools-builder/" >.gitignore
 git add .
 git commit -m "First draft"
+git apply ~/Sync/BLE_HID_Client/sendReport.patch

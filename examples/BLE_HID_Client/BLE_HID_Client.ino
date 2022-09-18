@@ -39,6 +39,18 @@
 // Install NimBLE-Arduino by h2zero using the IDE library manager.
 #include <NimBLEDevice.h>
 
+const uint16_t APPEARANCE_HID_GENERIC = 0x3C0;
+const uint16_t APPEARANCE_HID_KEYBOARD = 0x3C1;
+const uint16_t APPEARANCE_HID_MOUSE   = 0x3C2;
+const uint16_t APPEARANCE_HID_JOYSTICK = 0x3C3;
+const uint16_t APPEARANCE_HID_GAMEPAD = 0x3C4;
+const uint16_t APPEARANCE_HID_DIGITIZER_TABLET = 0x3C5;
+const uint16_t APPEARANCE_HID_CARD_READER = 0x3C6;
+const uint16_t APPEARANCE_HID_DIGITAL_PEN = 0x3C7;
+const uint16_t APPEARANCE_HID_BARCODE_SCANNER = 0x3C8;
+const uint16_t APPEARANCE_HID_TOUCHPAD = 0x3C9;
+const uint16_t APPEARANCE_HID_PRESENTATION_REMOTE = 0x3CA;
+
 const char HID_SERVICE[] = "1812";
 const char HID_INFORMATION[] = "2A4A";
 const char HID_REPORT_MAP[] = "2A4B";
@@ -113,10 +125,12 @@ class ClientCallbacks : public NimBLEClientCallbacks {
 class AdvertisedDeviceCallbacks: public NimBLEAdvertisedDeviceCallbacks {
 
   void onResult(NimBLEAdvertisedDevice* advertisedDevice) {
-    if ((advertisedDevice->getAdvType() == BLE_HCI_ADV_TYPE_ADV_DIRECT_IND_HD)
-        || (advertisedDevice->getAdvType() == BLE_HCI_ADV_TYPE_ADV_DIRECT_IND_LD)
-        || (advertisedDevice->haveServiceUUID() && advertisedDevice->isAdvertisingService(NimBLEUUID(HID_SERVICE))))
+//    if ((advertisedDevice->getAdvType() == BLE_HCI_ADV_TYPE_ADV_DIRECT_IND_HD)
+//        || (advertisedDevice->getAdvType() == BLE_HCI_ADV_TYPE_ADV_DIRECT_IND_LD)
+//        || (advertisedDevice->haveServiceUUID() && advertisedDevice->isAdvertisingService(NimBLEUUID(HID_SERVICE))))
+    if (advertisedDevice->haveServiceUUID() && advertisedDevice->isAdvertisingService(NimBLEUUID(HID_SERVICE)))
     {
+      Serial.printf("onResult: AdvType= %d\r\n", advertisedDevice->getAdvType());
       Serial.print("Advertised HID Device found: ");
       Serial.println(advertisedDevice->toString().c_str());
 
@@ -140,23 +154,75 @@ void notifyCB(NimBLERemoteCharacteristic* pRemoteCharacteristic, uint8_t* pData,
   str += std::string(pRemoteCharacteristic->getRemoteService()->getClient()->getPeerAddress());
   str += ": Service = " + std::string(pRemoteCharacteristic->getRemoteService()->getUUID());
   str += ", Characteristic = " + std::string(pRemoteCharacteristic->getUUID());
-  str += ", Value = ";
+  str += ", Handle = 0x";
   Serial.print(str.c_str());
+  Serial.print(pRemoteCharacteristic->getHandle());
+  Serial.print(", Value = ");
   for (size_t i = 0; i < length; i++) {
     Serial.print(pData[i], HEX);
     Serial.print(',');
   }
   Serial.print(' ');
-  if (length == 6) {
-    // BLE Trackball Mouse from Amazon returns 6 bytes per HID report
-    Serial.printf("buttons: %02x, x: %d, y: %d, wheel: %d",
-        pData[0], *(int16_t *)&pData[1], *(int16_t *)&pData[3], (int8_t)pData[5]);
-  }
-  else if (length == 5) {
-    // https://github.com/wakwak-koba/ESP32-NimBLE-Mouse
-    // returns 5 bytes per HID report
-    Serial.printf("buttons: %02x, x: %d, y: %d, wheel: %d hwheel: %d",
-        pData[0], (int8_t)pData[1], (int8_t)pData[2], (int8_t)pData[3], (int8_t)pData[4]);
+  switch (length) {
+    uint16_t appearance;
+    case 5:
+      // https://github.com/wakwak-koba/ESP32-NimBLE-Mouse
+      // returns 5 bytes per HID report
+      Serial.printf("buttons: %02x, x: %d, y: %d, wheel: %d hwheel: %d",
+          pData[0], (int8_t)pData[1], (int8_t)pData[2], (int8_t)pData[3], (int8_t)pData[4]);
+      break;
+    case 6:
+      // BLE Trackball Mouse from Amazon returns 6 bytes per HID report
+      typedef struct __attribute__((__packed__)) trackball_mouse {
+        uint8_t buttons;
+        int16_t x;
+        int16_t y;
+        int8_t wheel;
+      } trackball_mouse_t;
+      {
+        trackball_mouse_t *my_mouse;
+        my_mouse = (trackball_mouse_t *)pData;
+        Serial.printf("buttons: %02x, x: %d, y: %d, wheel: %d",
+            my_mouse->buttons, my_mouse->x, my_mouse->y, my_mouse->wheel);
+      }
+      break;
+    case 9:
+      appearance = advDevice->getAppearance();
+      if (appearance == APPEARANCE_HID_MOUSE) {
+        // MS BLE Mouse returns 9 bytes per HID report
+        typedef struct __attribute__((__packed__)) ms_mouse {
+          uint8_t buttons;
+          int16_t x;
+          int16_t y;
+          int16_t wheel;
+          int16_t pan;
+        } ms_mouse_t;
+        {
+          ms_mouse_t *my_mouse;
+          my_mouse = (ms_mouse_t *)pData;
+          Serial.printf("buttons: %02x, x: %d, y: %d, wheel: %d, pan: %d",
+              my_mouse->buttons, my_mouse->x, my_mouse->y, my_mouse->wheel, my_mouse->pan);
+        }
+      }
+      else if (appearance == APPEARANCE_HID_GAMEPAD) {
+        typedef struct __attribute__((__packed__)) {
+          uint8_t x;
+          uint8_t y;
+          uint8_t z;
+          uint8_t rz;
+          uint8_t brake;
+          uint8_t accel;
+          uint8_t hat;
+          uint16_t buttons;
+        } joystick_t;
+        {
+          joystick_t *my_joystick;
+          my_joystick = (joystick_t *)pData;
+          Serial.printf("buttons: %02x, x: %d, y: %d",
+              my_joystick->buttons, my_joystick->x, my_joystick->y);
+        }
+      }
+      break;
   }
   Serial.println();
 }
@@ -175,7 +241,9 @@ static ClientCallbacks clientCB;
 bool connectToServer()
 {
   NimBLEClient* pClient = nullptr;
+  bool reconnected = false;
 
+  Serial.printf("Client List Size: %d\r\n", NimBLEDevice::getClientListSize());
   /** Check if we have a client we should reuse first **/
   if(NimBLEDevice::getClientListSize()) {
     /** Special case when we already know this device, we send false as the
@@ -184,11 +252,13 @@ bool connectToServer()
      */
     pClient = NimBLEDevice::getClientByPeerAddress(advDevice->getAddress());
     if(pClient){
+      Serial.println("Reconnect try");
       if(!pClient->connect(advDevice, false)) {
         Serial.println("Reconnect failed");
         return false;
       }
       Serial.println("Reconnected client");
+      reconnected = true;
     }
     /** We don't already have a client that knows this device,
      *  we will check for a client that is disconnected that we can use.
@@ -247,27 +317,29 @@ bool connectToServer()
 
   pSvc = pClient->getService(HID_SERVICE);
   if(pSvc) {     /** make sure it's not null */
-    // This returns the HID report descriptor like this
-    // HID_REPORT_MAP 0x2a4b Value: 5,1,9,2,A1,1,9,1,A1,0,5,9,19,1,29,5,15,0,25,1,75,1,
-    // Copy and paste the value digits to http://eleccelerator.com/usbdescreqparser/
-    // to see the decoded report descriptor.
-    pChr = pSvc->getCharacteristic(HID_REPORT_MAP);
-    if(pChr) {     /** make sure it's not null */
-      Serial.print("HID_REPORT_MAP ");
-      if(pChr->canRead()) {
-        std::string value = pChr->readValue();
-        Serial.print(pChr->getUUID().toString().c_str());
-        Serial.print(" Value: ");
-        uint8_t *p = (uint8_t *)value.data();
-        for (size_t i = 0; i < value.length(); i++) {
-          Serial.print(p[i], HEX);
-          Serial.print(',');
+    if (!reconnected) {
+      // This returns the HID report descriptor like this
+      // HID_REPORT_MAP 0x2a4b Value: 5,1,9,2,A1,1,9,1,A1,0,5,9,19,1,29,5,15,0,25,1,75,1,
+      // Copy and paste the value digits to http://eleccelerator.com/usbdescreqparser/
+      // to see the decoded report descriptor.
+      pChr = pSvc->getCharacteristic(HID_REPORT_MAP);
+      if(pChr) {     /** make sure it's not null */
+        Serial.print("HID_REPORT_MAP ");
+        if(pChr->canRead()) {
+          std::string value = pChr->readValue();
+          Serial.print(pChr->getUUID().toString().c_str());
+          Serial.print(" Value: ");
+          uint8_t *p = (uint8_t *)value.data();
+          for (size_t i = 0; i < value.length(); i++) {
+            Serial.print(p[i], HEX);
+            Serial.print(',');
+          }
+          Serial.println();
         }
-        Serial.println();
       }
-    }
-    else {
-      Serial.println("HID REPORT MAP char not found.");
+      else {
+        Serial.println("HID REPORT MAP char not found.");
+      }
     }
 
     // Subscribe to characteristics HID_REPORT_DATA.
@@ -316,7 +388,7 @@ void setup ()
    *
    *  These are the default values, only shown here for demonstration.
    */
-  NimBLEDevice::setSecurityAuth(true, false, true);
+  NimBLEDevice::setSecurityAuth(true, true, true);
   //NimBLEDevice::setSecurityAuth(/*BLE_SM_PAIR_AUTHREQ_BOND | BLE_SM_PAIR_AUTHREQ_MITM |*/ BLE_SM_PAIR_AUTHREQ_SC);
 
   /** Optional: set the transmit power, default is 3db */

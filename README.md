@@ -8,8 +8,6 @@ a real BLE trackball mouse.
 The mouse input parameters (for example, x, y, buttons) can be used to control
 motors, servos, and LEDs.
 
-This program nows works for a BLE Trackball mouse from Amazon.
-
 ## Libraries
 
 Install the following use the Arduino IDE Library Manager.
@@ -25,11 +23,25 @@ ESP32-NimBLE-Mouse and the trackball mouse.
 
 The original BLE HID client demo.
 
+The following HID devices work.
+
+* ESP32 running ESP32-NimBLE-Mouse
+* BLE Trackball mouse https://www.amazon.com/dp/B09HHHDZZG/
+* Microsoft Bluetooth Mouse https://www.amazon.com/dp/B07Y41YMMJ/
+* BLE Gamepad/Joystick https://www.amazon.com/dp/B09QJLV6JJ/
+
 ### BLE_HID_Mouse_USB
 
-This demo converts BLE mouse movements and button clicks to USB mouse. Works
-with a real trackball mouse. Must use an ESP32 S3 to get BLE and USB on the
-same board. ESP32 S2 has USB but not BLE. ESP32 original has BLE but not USB.
+This demo converts BLE mouse movements and button clicks to USB mouse.
+Works with a real trackball mouse. Must use an ESP32 S3 to get BLE and
+USB on the same board. ESP32 S2 has USB but not BLE. ESP32 original has
+BLE but not USB.
+
+WARNING: sendReport.patch is required to add USBHIDMouse::sendReport.
+
+Works with the following.
+* ESP32 running ESP32-NimBLE-Mouse
+* BLE Trackball mouse https://www.amazon.com/dp/B09HHHDZZG/
 
 ## Sample output from BLE_HID_Client
 
@@ -100,6 +112,7 @@ ESP32 mouse or trackball mouse.
 
 ## Warning if using ESP32 S3
 
-Arduino-esp32 2.0.4 works fine except for a few problems with ESP32 S3. If you
-are not planning to use ESP32 S3, just use the latest stable release. If you have
-problems with ESP32 S3, try the previous release.
+Arduino-esp32 2.0.4 works fine except for a few problems with ESP32 S3.
+If you are not planning to use ESP32 S3, just use the latest stable
+release. If you have problems with ESP32 S3, try the previous release,
+2.0.3.

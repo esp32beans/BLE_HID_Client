@@ -3,11 +3,11 @@ PROJECT="BLE_HID_Client"
 ARDDIR=/tmp/acli_${PROJECT}_$$
 export ARDUINO_BOARD_MANAGER_ADDITIONAL_URLS="https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json"
 export ARDUINO_DIRECTORIES_DATA="${ARDDIR}/data"
-export ARDUINO_DIRECTORIES_DOWNLOADS="/home/me/Sync/ard_staging"
+export ARDUINO_DIRECTORIES_DOWNLOADS="${HOME}/Sync/ard_staging"
 export ARDUINO_DIRECTORIES_USER="${ARDDIR}/user"
 export LIBDIR="${ARDUINO_DIRECTORIES_USER}/libraries"
 arduino-cli core --no-color update-index
-arduino-cli core --no-color install m5stack:esp32
+arduino-cli core --no-color install m5stack:esp32@2.0.3
 arduino-cli core --no-color install esp32:esp32@2.0.3
 arduino-cli core --no-color list
 arduino-cli lib --no-color update-index
