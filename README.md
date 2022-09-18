@@ -16,8 +16,13 @@ Install the following use the Arduino IDE Library Manager.
 
 ## Examples
 
-The code has been moved to the examples directory. Both work with
-ESP32-NimBLE-Mouse and the trackball mouse.
+The sketch code has been moved to the examples directory.
+
+### BLE_HID_Joystick
+
+Arduino library for a BLE Gamepad/Joystick. The BLE HID code is moved
+into BLE_Client_Joystick.cpp/.h. The example sketch is now very short
+with callback functions for stick movement and button presses.
 
 ### BLE_HID_Client
 
