@@ -121,3 +121,6 @@ Arduino-esp32 2.0.4 works fine except for a few problems with ESP32 S3.
 If you are not planning to use ESP32 S3, just use the latest stable
 release. If you have problems with ESP32 S3, try the previous release,
 2.0.3.
+
+Arduino-esp32 2.0.5 seems to work fine on ESP32 S3 when using
+BLE_HID_Mouse_USB.

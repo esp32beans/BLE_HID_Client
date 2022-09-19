@@ -7,25 +7,25 @@ export ARDUINO_DIRECTORIES_DOWNLOADS="${HOME}/Sync/ard_staging"
 export ARDUINO_DIRECTORIES_USER="${ARDDIR}/user"
 export LIBDIR="${ARDUINO_DIRECTORIES_USER}/libraries"
 arduino-cli core --no-color update-index
-arduino-cli core --no-color install m5stack:esp32@2.0.3
-arduino-cli core --no-color install esp32:esp32@2.0.3
+arduino-cli core --no-color install esp32:esp32
 arduino-cli core --no-color list
 arduino-cli lib --no-color update-index
 arduino-cli lib --no-color install "NimBLE-Arduino"
 arduino-cli lib --no-color list
 #
 BOARD="esp32:esp32:esp32"
-CC="arduino-cli compile --fqbn esp32:esp32:esp32"
-alias cc='arduino-cli compile --verbose --clean --fqbn esp32:esp32:esp32 --dump-profile'
-alias up='arduino-cli --fqbn esp32:esp32:esp32 upload --port /dev/ttyUSB0'
+ln -s ${HOME}/Sync/BLE_HID_Client ${LIBDIR}
+alias cc='arduino-cli compile --clean --board-options USBMode=default --fqbn esp32:esp32:esp32s3'
+alias up='arduino-cli --fqbn esp32:esp32:esp32s3 upload --port /dev/ttyUSB0'
+patch -p2 -d ${ARDUINO_DIRECTORIES_DATA} <sendReport.patch
 ctags -R . ${ARDDIR}  ~/Sync/esp-idf/
 # Compile all examples for all boards with BLE
-BOARDS=('esp32:esp32:esp32' 'm5stack:esp32:m5stack-atom' 'esp32:esp32:esp32s3' 'esp32:esp32:esp32c3')
-for board in "${BOARDS[@]}" ; do
+declare -A BOARDS=( [esp32:esp32:esp32]="" [esp32:esp32:esp32s3]="--board-options USBMode=default" [esp32:esp32:esp32c3]="" )
+for board in "${!BOARDS[@]}" ; do
     export ARDUINO_BOARD_FQBN=${board}
     ARDUINO_BOARD_FQBN2=${ARDUINO_BOARD_FQBN//:/.}
-    (find . -name '*.ino' -print0 | xargs -0 -n 1 arduino-cli compile --no-color --verbose --fqbn ${board} --dump-profile --output-dir "${ARDUINO_BOARD_FQBN2}") >${ARDDIR}/ci_${board}.log 2>&1
+    board_opts=${BOARDS[$board]}
+    (find . -name '*.ino' -print0 | xargs -0 -n 1 arduino-cli compile --no-color --verbose --fqbn ${board} ${board_opts} --output-dir "${ARDUINO_BOARD_FQBN2}") >${ARDDIR}/ci_${board}.log 2>&1
 done
-egrep -i "abort|missing|fatal|error:|warning:" ${ARDDIR}/ci_*.log
-egrep -i "^Sketch uses|^Global variables use" ${ARDDIR}/ci_*.log
-
+grep -Ei "^Sketch uses|^Global variables use" ${ARDDIR}/ci_*.log
+grep -Ei "^Error|abort|missing|fatal|error:|warning:" ${ARDDIR}/ci_*.log
